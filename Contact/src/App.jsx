@@ -25,7 +25,7 @@ const App = () => {
 
   try {
     const { data } = await axios.post(
-      "http://localhost:5000/contact",
+      "https://contactforms-4eb6.onrender.com",
       formData
     );
 
