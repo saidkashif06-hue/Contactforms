@@ -1,0 +1,83 @@
+# ==========================
+# Dependencies
+# ==========================
+node_modules/
+**/node_modules/
+
+# ==========================
+# Environment Variables
+# ==========================
+.env
+.env.*
+!.env.example
+
+# ==========================
+# Build Files
+# ==========================
+dist/
+build/
+coverage/
+
+# ==========================
+# Logs
+# ==========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ==========================
+# OS Files
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# IDE Files
+# ==========================
+.vscode/
+.idea/
+*.swp
+
+# ==========================
+# Cache
+# ==========================
+.cache/
+.parcel-cache/
+.vite/
+.eslintcache
+
+# ==========================
+# Large Media (Optional)
+# Uncomment if you DON'T want
+# images/videos on GitHub
+# ==========================
+
+# Images
+*.psd
+*.ai
+*.xcf
+
+# Videos
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+
+# Audio
+*.mp3
+*.wav
+
+# Archives
+*.zip
+*.rar
+*.7z
+
+# ==========================
+# Temporary Files
+# ==========================
+tmp/
+temp/
+*.tmp
