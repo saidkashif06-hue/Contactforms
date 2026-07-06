@@ -8,20 +8,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Allow all origins (open CORS) - fine for now, but see note below
-const allowedOrigins = [
-  "https://contactforms-vlxf.vercel.app",
-  "https://contactforms-ten.vercel.app",
-];
-
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  }
-}));
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+  })
+);
 
 app.use(bodyParser.json());
 
