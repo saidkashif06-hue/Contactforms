@@ -7,11 +7,23 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Allow all origins (open CORS) - fine for now, but see note below
+// Allowed frontend origins
+const allowedOrigins = [
+  "https://contactforms-vlxf.vercel.app",
+  "https://contactforms-ten.vercel.app",
+  "http://localhost:3000", // for local testing
+];
+
 app.use(
   cors({
-    origin: "*",
-    methods: ["GET", "POST"],
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like curl, Postman, server-to-server)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
   })
 );
 
@@ -22,8 +34,17 @@ const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASS, // must be a Gmail App Password, not your normal password
   },
+});
+
+// Verify SMTP connection on startup so failures show up immediately in logs
+transporter.verify((err, success) => {
+  if (err) {
+    console.error("❌ SMTP connection failed:", err.message);
+  } else {
+    console.log("✅ SMTP server is ready to send emails");
+  }
 });
 
 // Contact Route
@@ -57,12 +78,33 @@ app.post("/contact", async (req, res) => {
       message: "Message sent successfully!",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Send mail error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to send message.",
     });
   }
+});
+
+// IMPORTANT: CORS error handler — without this, blocked-origin requests
+// hang/fail silently on the frontend with no useful response.
+app.use((err, req, res, next) => {
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({
+      success: false,
+      message: "This origin is not allowed to access the API.",
+    });
+  }
+  next(err);
+});
+
+// Catch-all error handler (safety net for anything unhandled)
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({
+    success: false,
+    message: "Something went wrong on the server.",
+  });
 });
 
 app.listen(PORT, () => {
