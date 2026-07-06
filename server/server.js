@@ -30,8 +30,14 @@ app.use(
 app.use(bodyParser.json());
 
 // Nodemailer Transporter
+// NOTE: host/port used explicitly (instead of `service: "gmail"`) so we can
+// force IPv4 — Render's network can't route to Gmail's IPv6 address, which
+// causes ENETUNREACH / ETIMEDOUT connection errors.
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // true for port 465, false for 587
+  family: 4, // force IPv4 to avoid ENETUNREACH on IPv6-blocked hosts like Render
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS, // must be a Gmail App Password, not your normal password
