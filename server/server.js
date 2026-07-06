@@ -1,8 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 require("dotenv").config();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,29 +31,10 @@ app.use(
 
 app.use(bodyParser.json());
 
-// Nodemailer Transporter
-// NOTE: host/port used explicitly (instead of `service: "gmail"`) so we can
-// force IPv4 — Render's network can't route to Gmail's IPv6 address, which
-// causes ENETUNREACH / ETIMEDOUT connection errors.
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // true for port 465, false for 587
-  family: 4, // force IPv4 to avoid ENETUNREACH on IPv6-blocked hosts like Render
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // must be a Gmail App Password, not your normal password
-  },
-});
-
-// Verify SMTP connection on startup so failures show up immediately in logs
-transporter.verify((err, success) => {
-  if (err) {
-    console.error("❌ SMTP connection failed:", err.message);
-  } else {
-    console.log("✅ SMTP server is ready to send emails");
-  }
-});
+// Using Resend's HTTP API instead of SMTP — this avoids Render's free tier
+// blocking outbound SMTP ports (465/587), which caused the ETIMEDOUT errors.
+// Sign up free at https://resend.com, get an API key, and set it as
+// RESEND_API_KEY in your environment variables.
 
 // Contact Route
 app.post("/contact", async (req, res) => {
@@ -65,10 +48,12 @@ app.post("/contact", async (req, res) => {
       });
     }
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+    const { data, error } = await resend.emails.send({
+      // Must be a verified domain in Resend, OR use "onboarding@resend.dev"
+      // for quick testing before you verify your own domain.
+      from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
       to: process.env.EMAIL_USER,
-      replyTo: email,
+      reply_to: email,
       subject: `New Contact Form Submission from ${name}`,
       html: `
         <h2>New Contact Form Submission</h2>
@@ -78,6 +63,14 @@ app.post("/contact", async (req, res) => {
         <p>${message}</p>
       `,
     });
+
+    if (error) {
+      console.error("Resend error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send message.",
+      });
+    }
 
     res.status(200).json({
       success: true,
