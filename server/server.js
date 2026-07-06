@@ -7,12 +7,22 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(
-  cors({
-    origin: "https://contactforms-ten.vercel.app",
-    methods: ["GET", "POST"],
-  })
-);
+// Allow all origins (open CORS) - fine for now, but see note below
+const allowedOrigins = [
+  "https://contactforms-vlxf.vercel.app",
+  "https://contactforms-ten.vercel.app",
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  }
+}));
+
 app.use(bodyParser.json());
 
 // Nodemailer Transporter
@@ -29,7 +39,6 @@ app.post("/contact", async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
-    // Validation
     if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
@@ -37,17 +46,15 @@ app.post("/contact", async (req, res) => {
       });
     }
 
-    // Send Email
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER, // Your email
+      to: process.env.EMAIL_USER,
+      replyTo: email,
       subject: `New Contact Form Submission from ${name}`,
       html: `
         <h2>New Contact Form Submission</h2>
-
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Email:</strong> ${email}</p>
-
         <p><strong>Message:</strong></p>
         <p>${message}</p>
       `,
@@ -59,7 +66,6 @@ app.post("/contact", async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-
     res.status(500).json({
       success: false,
       message: "Failed to send message.",
@@ -67,7 +73,6 @@ app.post("/contact", async (req, res) => {
   }
 });
 
-// Start Server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
